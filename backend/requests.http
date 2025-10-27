@@ -1,0 +1,138 @@
+### Uni App Backend API - REST Client Tests
+### Use with VS Code REST Client extension
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@accessToken = 
+@adminToken = 
+
+###############################################
+# AUTHENTICATION
+###############################################
+
+### 1. Register Student
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "student@test.com",
+  "password": "Student@123",
+  "fullName": "Test Student",
+  "role": "student",
+  "university": "Stanford University",
+  "faculty": "Computer Science",
+  "academicYear": "2024"
+}
+
+### 2. Register Admin
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "admin@test.com",
+  "password": "Admin@123456",
+  "fullName": "Admin User",
+  "role": "admin"
+}
+
+### 3. Login Student
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "student@test.com",
+  "password": "Student@123"
+}
+
+### 4. Login Admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@test.com",
+  "password": "Admin@123456"
+}
+
+### 5. Get Current User Profile
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{accessToken}}
+
+###############################################
+# USER MANAGEMENT
+###############################################
+
+### 6. Get All Users (Admin Only)
+GET {{baseUrl}}/users
+Authorization: Bearer {{adminToken}}
+
+### 7. Get User by ID
+GET {{baseUrl}}/users/1
+Authorization: Bearer {{accessToken}}
+
+### 8. Create User (Admin Only)
+POST {{baseUrl}}/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "email": "newuser@test.com",
+  "password": "NewUser@123",
+  "fullName": "New User",
+  "role": "prospective",
+  "isActive": true
+}
+
+### 9. Update User
+PATCH {{baseUrl}}/users/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "fullName": "Updated Name"
+}
+
+### 10. Delete User (Admin Only)
+DELETE {{baseUrl}}/users/1
+Authorization: Bearer {{adminToken}}
+
+###############################################
+# ERROR CASES
+###############################################
+
+### Invalid Email Format
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "invalid-email",
+  "password": "Test@123",
+  "fullName": "Test User",
+  "role": "student"
+}
+
+### Weak Password
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@test.com",
+  "password": "weak",
+  "fullName": "Test User",
+  "role": "student"
+}
+
+### Invalid Credentials
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "wrong@test.com",
+  "password": "WrongPass@123"
+}
+
+### Unauthorized Access (No Token)
+GET {{baseUrl}}/users
+
+### Invalid Token
+GET {{baseUrl}}/users
+Authorization: Bearer invalid_token_here

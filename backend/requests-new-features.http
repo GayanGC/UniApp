@@ -1,0 +1,388 @@
+### Uni App Backend - New Features Testing
+### Student Profile & Boarding Posts Management
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@studentToken = 
+@providerToken = 
+@adminToken = 
+
+###############################################
+# SETUP - REGISTER USERS
+###############################################
+
+### 1. Register Student User
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "student.test@university.edu",
+  "password": "Student@123",
+  "fullName": "John Student",
+  "role": "student",
+  "university": "Initial University",
+  "faculty": "Initial Faculty",
+  "academicYear": "2024"
+}
+
+### 2. Register Boarding Provider
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "provider.test@housing.com",
+  "password": "Provider@123",
+  "fullName": "Campus Housing Ltd",
+  "role": "boarding_provider"
+}
+
+### 3. Login Student (Copy token to @studentToken)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "student.test@university.edu",
+  "password": "Student@123"
+}
+
+### 4. Login Provider (Copy token to @providerToken)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "provider.test@housing.com",
+  "password": "Provider@123"
+}
+
+###############################################
+# STUDENT PROFILE MANAGEMENT
+###############################################
+
+### 5. Get Student Profile
+GET {{baseUrl}}/students/profile
+Authorization: Bearer {{studentToken}}
+
+### 6. Update Student Profile
+PATCH {{baseUrl}}/students/profile
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "university": "Stanford University",
+  "faculty": "Computer Science",
+  "academicYear": "2024-2025"
+}
+
+### 7. Update Partial Student Profile
+PATCH {{baseUrl}}/students/profile
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "academicYear": "2025"
+}
+
+### 8. Try to Access Student Profile as Provider (Should Fail - 403)
+GET {{baseUrl}}/students/profile
+Authorization: Bearer {{providerToken}}
+
+###############################################
+# BOARDING POSTS - CREATE
+###############################################
+
+### 9. Create Boarding Post #1
+POST {{baseUrl}}/boarding
+Authorization: Bearer {{providerToken}}
+Content-Type: application/json
+
+{
+  "title": "Cozy Student Room Near Campus",
+  "description": "Fully furnished room with WiFi, utilities included. Perfect for students!",
+  "monthlyRent": 450.00,
+  "isAvailable": true,
+  "locationDetails": "123 University Ave, 5 min walk to campus"
+}
+
+### 10. Create Boarding Post #2
+POST {{baseUrl}}/boarding
+Authorization: Bearer {{providerToken}}
+Content-Type: application/json
+
+{
+  "title": "Shared Apartment - 2 Bedrooms",
+  "description": "Modern apartment with kitchen, living room, and balcony",
+  "monthlyRent": 600.00,
+  "isAvailable": true,
+  "locationDetails": "456 College Street, Near library"
+}
+
+### 11. Create Boarding Post #3 (Not Available)
+POST {{baseUrl}}/boarding
+Authorization: Bearer {{providerToken}}
+Content-Type: application/json
+
+{
+  "title": "Private Studio",
+  "description": "Self-contained studio with bathroom and kitchenette",
+  "monthlyRent": 750.00,
+  "isAvailable": false,
+  "locationDetails": "789 Campus Road"
+}
+
+### 12. Try to Create Post as Student (Should Fail - 403)
+POST {{baseUrl}}/boarding
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "title": "Test Post",
+  "monthlyRent": 100.00
+}
+
+###############################################
+# BOARDING POSTS - READ
+###############################################
+
+### 13. Get All Available Posts (As Student)
+GET {{baseUrl}}/boarding
+Authorization: Bearer {{studentToken}}
+
+### 14. Get All Available Posts (As Provider)
+GET {{baseUrl}}/boarding
+Authorization: Bearer {{providerToken}}
+
+### 15. Get My Posts (Provider Only)
+GET {{baseUrl}}/boarding/my-posts
+Authorization: Bearer {{providerToken}}
+
+### 16. Try to Get My Posts as Student (Should Fail - 403)
+GET {{baseUrl}}/boarding/my-posts
+Authorization: Bearer {{studentToken}}
+
+### 17. Get Single Post by ID (Replace :id with actual post ID)
+GET {{baseUrl}}/boarding/1
+Authorization: Bearer {{studentToken}}
+
+### 18. Get Non-Existent Post (Should Fail - 404)
+GET {{baseUrl}}/boarding/99999
+Authorization: Bearer {{studentToken}}
+
+###############################################
+# BOARDING POSTS - UPDATE
+###############################################
+
+### 19. Update Boarding Post (Replace :id with actual post ID)
+PATCH {{baseUrl}}/boarding/1
+Authorization: Bearer {{providerToken}}
+Content-Type: application/json
+
+{
+  "title": "Updated: Cozy Student Room Near Campus",
+  "monthlyRent": 475.00
+}
+
+### 20. Mark Post as Unavailable
+PATCH {{baseUrl}}/boarding/1
+Authorization: Bearer {{providerToken}}
+Content-Type: application/json
+
+{
+  "isAvailable": false
+}
+
+### 21. Update Only Description
+PATCH {{baseUrl}}/boarding/1
+Authorization: Bearer {{providerToken}}
+Content-Type: application/json
+
+{
+  "description": "Updated description with more details about amenities"
+}
+
+### 22. Try to Update Post as Student (Should Fail - 403)
+PATCH {{baseUrl}}/boarding/1
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "title": "Hacked Title"
+}
+
+###############################################
+# BOARDING POSTS - DELETE
+###############################################
+
+### 23. Delete Boarding Post (Replace :id with actual post ID)
+DELETE {{baseUrl}}/boarding/3
+Authorization: Bearer {{providerToken}}
+
+### 24. Try to Delete Post as Student (Should Fail - 403)
+DELETE {{baseUrl}}/boarding/1
+Authorization: Bearer {{studentToken}}
+
+### 25. Try to Delete Non-Existent Post (Should Fail - 404)
+DELETE {{baseUrl}}/boarding/99999
+Authorization: Bearer {{providerToken}}
+
+###############################################
+# VALIDATION TESTS
+###############################################
+
+### 26. Create Post with Missing Required Fields (Should Fail - 400)
+POST {{baseUrl}}/boarding
+Authorization: Bearer {{providerToken}}
+Content-Type: application/json
+
+{
+  "description": "Missing title and rent"
+}
+
+### 27. Create Post with Negative Rent (Should Fail - 400)
+POST {{baseUrl}}/boarding
+Authorization: Bearer {{providerToken}}
+Content-Type: application/json
+
+{
+  "title": "Test Post",
+  "monthlyRent": -100.00
+}
+
+### 28. Update Student Profile with Too Long Values (Should Fail - 400)
+PATCH {{baseUrl}}/students/profile
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "university": "This is a very long university name that exceeds the maximum allowed length of 255 characters. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+}
+
+###############################################
+# UNAUTHORIZED ACCESS TESTS
+###############################################
+
+### 29. Try to Access Student Profile Without Token (Should Fail - 401)
+GET {{baseUrl}}/students/profile
+
+### 30. Try to Create Post Without Token (Should Fail - 401)
+POST {{baseUrl}}/boarding
+Content-Type: application/json
+
+{
+  "title": "Test",
+  "monthlyRent": 100
+}
+
+### 31. Try to Access with Invalid Token (Should Fail - 401)
+GET {{baseUrl}}/boarding
+Authorization: Bearer invalid_token_here
+
+###############################################
+# CROSS-ROLE ACCESS TESTS
+###############################################
+
+### 32. Student Accessing Boarding Provider Endpoint (Should Fail - 403)
+GET {{baseUrl}}/boarding/my-posts
+Authorization: Bearer {{studentToken}}
+
+### 33. Provider Accessing Student Endpoint (Should Fail - 403)
+GET {{baseUrl}}/students/profile
+Authorization: Bearer {{providerToken}}
+
+###############################################
+# COMPLETE WORKFLOW TEST
+###############################################
+
+### 34. Complete Student Workflow
+# Step 1: Register
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "workflow.student@test.com",
+  "password": "Test@123456",
+  "fullName": "Workflow Student",
+  "role": "student"
+}
+
+### Step 2: Login (Save token)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "workflow.student@test.com",
+  "password": "Test@123456"
+}
+
+### Step 3: Update Profile
+PATCH {{baseUrl}}/students/profile
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "university": "MIT",
+  "faculty": "Engineering",
+  "academicYear": "2024"
+}
+
+### Step 4: View Available Boarding Posts
+GET {{baseUrl}}/boarding
+Authorization: Bearer {{studentToken}}
+
+### Step 5: View Specific Post
+GET {{baseUrl}}/boarding/1
+Authorization: Bearer {{studentToken}}
+
+###############################################
+# COMPLETE PROVIDER WORKFLOW
+###############################################
+
+### 35. Complete Provider Workflow
+# Step 1: Register
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "workflow.provider@test.com",
+  "password": "Test@123456",
+  "fullName": "Workflow Provider",
+  "role": "boarding_provider"
+}
+
+### Step 2: Login (Save token)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "workflow.provider@test.com",
+  "password": "Test@123456"
+}
+
+### Step 3: Create Multiple Posts
+POST {{baseUrl}}/boarding
+Authorization: Bearer {{providerToken}}
+Content-Type: application/json
+
+{
+  "title": "Workflow Post 1",
+  "description": "First test post",
+  "monthlyRent": 400.00,
+  "locationDetails": "Test Location 1"
+}
+
+### Step 4: View My Posts
+GET {{baseUrl}}/boarding/my-posts
+Authorization: Bearer {{providerToken}}
+
+### Step 5: Update a Post
+PATCH {{baseUrl}}/boarding/1
+Authorization: Bearer {{providerToken}}
+Content-Type: application/json
+
+{
+  "monthlyRent": 425.00,
+  "isAvailable": true
+}
+
+### Step 6: View All Available Posts
+GET {{baseUrl}}/boarding
+Authorization: Bearer {{providerToken}}
