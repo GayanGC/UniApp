@@ -31,15 +31,16 @@ export const multerConfig = {
       cb(null, `paper-${uniqueSuffix}${ext}`);
     },
   }),
-  fileFilter: (req, file, cb) => {
+  fileFilter: (
+    req: any,
+    file: Express.Multer.File,
+    cb: (error: Error | null, acceptFile: boolean) => void,
+  ) => {
     // Only allow PDF files
     if (file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
-      cb(
-        new BadRequestException('Only PDF files are allowed'),
-        false,
-      );
+      cb(new BadRequestException('Only PDF files are allowed'), false);
     }
   },
   limits: {

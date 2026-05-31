@@ -24,7 +24,6 @@ import { Roles, CurrentUser } from '@common/decorators';
 import { UserRole } from '@common/enums';
 import { multerConfig } from '@config/multer.config';
 import { createReadStream, existsSync } from 'fs';
-import { join } from 'path';
 
 /**
  * Past Papers Controller
@@ -59,11 +58,7 @@ export class PastPapersController {
       examYear: parseInt(uploadDto.examYear as any, 10),
     };
 
-    const pastPaper = await this.pastPapersService.upload(
-      dto,
-      file.path,
-      userId,
-    );
+    const pastPaper = await this.pastPapersService.upload(dto, file.path, userId);
 
     return {
       message: 'Past paper uploaded successfully',
@@ -103,10 +98,7 @@ export class PastPapersController {
    * GET /api/v1/past-papers/download/:paperId
    */
   @Get('download/:paperId')
-  async download(
-    @Param('paperId', ParseIntPipe) paperId: number,
-    @Res() res: Response,
-  ) {
+  async download(@Param('paperId', ParseIntPipe) paperId: number, @Res() res: Response) {
     const paper = await this.pastPapersService.findOne(paperId);
 
     // Check if file exists
@@ -115,9 +107,10 @@ export class PastPapersController {
     }
 
     // Generate filename for download
-    const filename = `${paper.university}_${paper.faculty}_${paper.subjectName}_${paper.examYear}.pdf`
-      .replace(/\s+/g, '_')
-      .replace(/[^a-zA-Z0-9_.-]/g, '');
+    const filename =
+      `${paper.university}_${paper.faculty}_${paper.subjectName}_${paper.examYear}.pdf`
+        .replace(/\s+/g, '_')
+        .replace(/[^a-zA-Z0-9_.-]/g, '');
 
     // Set headers for file download
     res.setHeader('Content-Type', 'application/pdf');

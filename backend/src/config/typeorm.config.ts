@@ -26,9 +26,12 @@ export const typeOrmConfig: DataSourceOptions = {
   migrations: ['dist/migrations/*.js'],
   synchronize: configService.get<boolean>('DB_SYNCHRONIZE', false),
   logging: configService.get<boolean>('DB_LOGGING', true),
-  ssl: configService.get<string>('NODE_ENV') === 'production' ? {
-    rejectUnauthorized: false,
-  } : false,
+  ssl:
+    configService.get<string>('NODE_ENV') === 'production'
+      ? {
+          rejectUnauthorized: false,
+        }
+      : false,
 };
 
 // DataSource for migrations

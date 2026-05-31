@@ -10,7 +10,6 @@ import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { User, Student } from './entities';
 import { CreateUserDto, UpdateUserDto } from './dto';
-import { UserRole } from '@common/enums';
 
 /**
  * Users Service
@@ -47,10 +46,7 @@ export class UsersService {
 
     try {
       // Hash password
-      const passwordHash = await bcrypt.hash(
-        createUserDto.password,
-        this.saltRounds,
-      );
+      const passwordHash = await bcrypt.hash(createUserDto.password, this.saltRounds);
 
       // Create user entity
       const user = this.userRepository.create({
@@ -167,10 +163,7 @@ export class UsersService {
     try {
       // Hash password if being updated
       if (updateUserDto.password) {
-        const passwordHash = await bcrypt.hash(
-          updateUserDto.password,
-          this.saltRounds,
-        );
+        const passwordHash = await bcrypt.hash(updateUserDto.password, this.saltRounds);
         user.passwordHash = passwordHash;
       }
 

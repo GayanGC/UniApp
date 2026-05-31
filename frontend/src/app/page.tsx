@@ -76,6 +76,11 @@ export default function HomePage() {
                 Sign In
               </Button>
             </Link>
+            {isAuthenticated && user?.role === 'boarding_provider' && (
+              <Link href="/provider/dashboard">
+                <Button variant="outline">Manage My Boarding Posts</Button>
+              </Link>
+            )}
           </div>
         </div>
 

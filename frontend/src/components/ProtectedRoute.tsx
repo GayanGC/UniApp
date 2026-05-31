@@ -20,11 +20,11 @@ export function ProtectedRoute({
   allowedRoles,
   requireAuth = true 
 }: ProtectedRouteProps) {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!loading) {
       // Redirect to login if authentication is required but user is not authenticated
       if (requireAuth && !isAuthenticated) {
         router.push('/login');
@@ -38,10 +38,10 @@ export function ProtectedRoute({
         return;
       }
     }
-  }, [isLoading, isAuthenticated, user, allowedRoles, requireAuth, router]);
+  }, [loading, isAuthenticated, user, allowedRoles, requireAuth, router]);
 
   // Show loading state
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

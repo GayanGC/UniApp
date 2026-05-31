@@ -1,15 +1,20 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as helmet from 'helmet';
-import * as compression from 'compression';
+import { join } from 'path';
+import helmet from 'helmet';
+import compression from 'compression';
 import { AppModule } from './app.module';
 
 /**
  * Bootstrap the application
  */
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Serve uploaded files at /uploads/*  (e.g. /uploads/boarding/abc.jpg)
+  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
 
   // Get configuration service
   const configService = app.get(ConfigService);

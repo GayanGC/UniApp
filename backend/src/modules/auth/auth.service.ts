@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  ConflictException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '@modules/users/users.service';
@@ -102,10 +97,7 @@ export class AuthService {
     }
 
     // Validate password
-    const isPasswordValid = await this.usersService.validatePassword(
-      user,
-      loginDto.password,
-    );
+    const isPasswordValid = await this.usersService.validatePassword(user, loginDto.password);
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
@@ -133,11 +125,7 @@ export class AuthService {
    * @param role - User role
    * @returns JWT token
    */
-  private async generateToken(
-    userId: number,
-    email: string,
-    role: UserRole,
-  ): Promise<string> {
+  private async generateToken(userId: number, email: string, role: UserRole): Promise<string> {
     const payload: JwtPayload = {
       sub: userId,
       email,

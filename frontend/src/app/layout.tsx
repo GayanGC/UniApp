@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { SocketProvider } from '@/contexts/SocketContext';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -18,8 +19,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.variable}>
+        {/*
+          AuthProvider must wrap SocketProvider because SocketContext reads
+          the auth_token cookie (which is set by AuthContext on login).
+        */}
         <AuthProvider>
-          {children}
+          <SocketProvider>
+            {children}
+          </SocketProvider>
         </AuthProvider>
       </body>
     </html>

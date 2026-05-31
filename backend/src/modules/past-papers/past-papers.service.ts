@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  InternalServerErrorException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PastPaper } from './entities';
@@ -98,8 +93,7 @@ export class PastPapersService {
     }
 
     // Order by most recent first
-    query.orderBy('paper.examYear', 'DESC')
-      .addOrderBy('paper.createdAt', 'DESC');
+    query.orderBy('paper.examYear', 'DESC').addOrderBy('paper.createdAt', 'DESC');
 
     return await query.getMany();
   }

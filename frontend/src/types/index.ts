@@ -63,7 +63,7 @@ export interface ApiError {
 export interface AuthContextType {
   user: User | null;
   token: string | null;
-  isLoading: boolean;
+  loading: boolean;
   isAuthenticated: boolean;
   login: (credentials: LoginRequest) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
@@ -152,3 +152,106 @@ export interface POIsResponse {
   count: number;
   data: CampusPOI[];
 }
+
+/**
+ * Boarding Post Provider (nested relation returned by the API)
+ */
+export interface BoardingPostProvider {
+  userId: number;
+  fullName: string;
+  email: string;
+}
+
+/**
+ * Boarding Post Interface
+ * Matches the BoardingPost TypeORM entity returned by GET /api/v1/boarding
+ */
+export interface BoardingPost {
+  postId: number;
+  providerUserId: number;
+  title: string;
+  description: string | null;
+  monthlyRent: number;
+  isAvailable: boolean;
+  locationDetails: string | null;
+  createdAt: string;
+  updatedAt: string;
+  /** Populated when fetching the public listing (relations: ['provider']) */
+  provider?: BoardingPostProvider;
+  /** Server-relative image paths e.g. ["/uploads/boarding/abc.jpg"] */
+  images: string[];
+}
+
+/**
+ * Boarding Filter Parameters
+ * Mirrors GetBoardingFilterDto on the backend — all fields optional.
+ */
+export interface BoardingFilters {
+  location: string;       // partial case-insensitive match on locationDetails
+  minPrice: string;       // string so empty input ("") is valid — converted to number before API call
+  maxPrice: string;
+  available: boolean | null; // null = "show all", true/false = explicit filter
+}
+
+/**
+ * Study Note Interface
+ */
+export interface StudyNote {
+  note_id: number;
+  title: string;
+  description?: string;
+  university?: string;
+  faculty?: string;
+  subject_code?: string;
+  academic_year?: number;
+  file_path: string;
+  is_approved: boolean;
+  upload_date: string;
+  uploader: User;
+}
+
+/**
+ * Student Profile Interface
+ * Matches the Student entity returned by GET /api/v1/students/profile
+ */
+export interface StudentProfile {
+  studentId: number;
+  userId: number;
+  university: string | null;
+  faculty: string | null;
+  academicYear: string | null;
+  createdAt: string;
+  updatedAt: string;
+  /** Populated via the 'user' relation */
+  user: {
+    userId: number;
+    email: string;
+    fullName: string;
+    role: UserRole;
+  };
+}
+
+/**
+ * Update Student Profile Request Body
+ */
+export interface UpdateStudentProfileRequest {
+  university?: string;
+  faculty?: string;
+  academicYear?: string;
+}
+
+/**
+ * Real-time Notification Item
+ * Matches the NotificationPayload emitted by NotificationsGateway.
+ * The `read` field is added client-side for local state tracking.
+ */
+export interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'boarding';
+  createdAt: string;
+  /** Client-side only — true after markAllRead() is called */
+  read: boolean;
+}
+

@@ -5,9 +5,10 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, FindOptionsWhere, ILike, Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { BoardingPost } from './entities';
-import { CreateBoardingPostDto, UpdateBoardingPostDto } from './dto';
+import { CreateBoardingPostDto, UpdateBoardingPostDto, GetBoardingFilterDto } from './dto';
+import { NotificationsGateway } from '@modules/notifications/notifications.gateway';
 
 /**
  * Boarding Service
@@ -18,6 +19,7 @@ export class BoardingService {
   constructor(
     @InjectRepository(BoardingPost)
     private readonly boardingPostRepository: Repository<BoardingPost>,
+    private readonly notificationsGateway: NotificationsGateway,
   ) {}
 
   /**
@@ -38,9 +40,21 @@ export class BoardingService {
         monthlyRent: createBoardingPostDto.monthlyRent,
         isAvailable: createBoardingPostDto.isAvailable ?? true,
         locationDetails: createBoardingPostDto.locationDetails,
+        images: createBoardingPostDto.images ?? [],
       });
 
-      return await this.boardingPostRepository.save(boardingPost);
+      const saved = await this.boardingPostRepository.save(boardingPost);
+
+      // Notify the provider that their listing is now live
+      this.notificationsGateway.sendToUser(providerUserId, {
+        id: `boarding-created-${saved.postId}-${Date.now()}`,
+        title: '🏠 Listing Published',
+        message: `Your listing "${saved.title}" is now live!`,
+        type: 'success',
+        createdAt: new Date().toISOString(),
+      });
+
+      return saved;
     } catch (error) {
       throw new InternalServerErrorException('Failed to create boarding post');
     }
@@ -59,12 +73,52 @@ export class BoardingService {
   }
 
   /**
-   * Get all available boarding posts (public)
-   * @returns Array of available boarding posts
+   * Get all boarding posts with optional search & filtering.
+   *
+   * Supported filters (all optional — omitting a filter returns all results for that field):
+   *  - location   → case-insensitive partial match on locationDetails  (ILIKE '%value%')
+   *  - minPrice   → monthly_rent >= minPrice
+   *  - maxPrice   → monthly_rent <= maxPrice
+   *  - available  → is_available = true | false
+   *
+   * When BOTH minPrice AND maxPrice are supplied, a single BETWEEN clause is used
+   * instead of two separate conditions for optimal query performance.
+   *
+   * @param filterDto - Validated query parameters from the request
+   * @returns Array of matching boarding posts with provider info
    */
-  async findAllAvailable(): Promise<BoardingPost[]> {
+  async findAllWithFilters(filterDto: GetBoardingFilterDto): Promise<BoardingPost[]> {
+    const { location, minPrice, maxPrice, available } = filterDto;
+
+    // Start with an empty where-clause object; only add conditions for provided filters.
+    const where: FindOptionsWhere<BoardingPost> = {};
+
+    // ── Availability filter ───────────────────────────────────────────────────
+    // Default to showing only available posts when the param is not supplied.
+    // Passing ?available=false explicitly allows admins / providers to query unavailable posts.
+    if (available !== undefined) {
+      where.isAvailable = available;
+    } else {
+      where.isAvailable = true; // sensible default: only show available rooms
+    }
+
+    // ── Location filter (case-insensitive partial match) ──────────────────────
+    if (location) {
+      where.locationDetails = ILike(`%${location.trim()}%`);
+    }
+
+    // ── Price range filter ────────────────────────────────────────────────────
+    // TypeORM's Between is inclusive on both ends: >= minPrice AND <= maxPrice.
+    if (minPrice !== undefined && maxPrice !== undefined) {
+      where.monthlyRent = Between(minPrice, maxPrice);
+    } else if (minPrice !== undefined) {
+      where.monthlyRent = MoreThanOrEqual(minPrice);
+    } else if (maxPrice !== undefined) {
+      where.monthlyRent = LessThanOrEqual(maxPrice);
+    }
+
     return await this.boardingPostRepository.find({
-      where: { isAvailable: true },
+      where,
       order: { createdAt: 'DESC' },
       relations: ['provider'],
       select: {
@@ -98,6 +152,15 @@ export class BoardingService {
     if (!post) {
       throw new NotFoundException('Boarding post not found');
     }
+
+    // Real-time notification to the provider when someone views their listing
+    this.notificationsGateway.sendToUser(post.providerUserId, {
+      id: `boarding-view-${postId}-${Date.now()}`,
+      title: '👀 Someone viewed your listing',
+      message: `A user just viewed your post "${post.title}".`,
+      type: 'boarding',
+      createdAt: new Date().toISOString(),
+    });
 
     return post;
   }
@@ -143,6 +206,10 @@ export class BoardingService {
       }
       if (updateBoardingPostDto.locationDetails !== undefined) {
         post.locationDetails = updateBoardingPostDto.locationDetails;
+      }
+      // Replace images only when new files were uploaded
+      if (updateBoardingPostDto.images !== undefined) {
+        post.images = updateBoardingPostDto.images;
       }
 
       return await this.boardingPostRepository.save(post);

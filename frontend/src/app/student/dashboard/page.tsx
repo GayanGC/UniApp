@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { UserRole } from '@/types';
 import { GraduationCap, Home, User, LogOut, BookOpen, MapPin, FileText } from 'lucide-react';
+import BrandHeader from '@/components/BrandHeader';
 import Link from 'next/link';
 
 function StudentDashboardContent() {
@@ -13,25 +14,7 @@ function StudentDashboardContent() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
-                <GraduationCap className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Uni App</h1>
-                <p className="text-sm text-gray-500">Student Portal</p>
-              </div>
-            </div>
-            <Button onClick={logout} variant="outline" size="sm">
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
-      </header>
+      <BrandHeader subtitle="Student Portal" />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

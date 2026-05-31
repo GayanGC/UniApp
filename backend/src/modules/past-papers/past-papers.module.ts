@@ -11,10 +11,7 @@ import { multerConfig } from '@config/multer.config';
  * Handles past examination papers upload and retrieval
  */
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([PastPaper]),
-    MulterModule.register(multerConfig),
-  ],
+  imports: [TypeOrmModule.forFeature([PastPaper]), MulterModule.register(multerConfig)],
   controllers: [PastPapersController],
   providers: [PastPapersService],
   exports: [PastPapersService],

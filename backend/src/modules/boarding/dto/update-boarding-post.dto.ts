@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsBoolean, IsOptional, Min, MaxLength } from 'class-validator';
+import { IsString, IsNumber, IsBoolean, IsOptional, IsArray, Min, MaxLength } from 'class-validator';
 
 /**
  * Update Boarding Post DTO
@@ -27,4 +27,10 @@ export class UpdateBoardingPostDto {
   @IsOptional()
   @MaxLength(500, { message: 'Location details must not exceed 500 characters' })
   locationDetails?: string;
+
+  /** Replaced image paths — set by the controller after Multer processes uploads */
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  images?: string[];
 }

@@ -1,4 +1,13 @@
-import { IsString, IsNotEmpty, IsNumber, IsBoolean, IsOptional, Min, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsBoolean,
+  IsOptional,
+  IsArray,
+  Min,
+  MaxLength,
+} from 'class-validator';
 
 /**
  * Create Boarding Post DTO
@@ -27,4 +36,13 @@ export class CreateBoardingPostDto {
   @IsOptional()
   @MaxLength(500, { message: 'Location details must not exceed 500 characters' })
   locationDetails?: string;
+
+  /**
+   * Pre-existing image paths — typically populated by the service after Multer
+   * saves the uploaded files.  Clients don't send this; the controller sets it.
+   */
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  images?: string[];
 }

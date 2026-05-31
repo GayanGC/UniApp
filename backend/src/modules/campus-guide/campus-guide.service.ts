@@ -133,10 +133,7 @@ export class CampusGuideService {
    * @param updateData - Update data
    * @returns Updated campus
    */
-  async updateCampus(
-    campusId: number,
-    updateData: Partial<CreateCampusDto>,
-  ): Promise<Campus> {
+  async updateCampus(campusId: number, updateData: Partial<CreateCampusDto>): Promise<Campus> {
     const campus = await this.getCampusById(campusId);
 
     Object.assign(campus, updateData);

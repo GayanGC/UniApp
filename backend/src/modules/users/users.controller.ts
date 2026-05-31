@@ -55,10 +55,7 @@ export class UsersController {
    * Admins can view any user, others can only view themselves
    */
   @Get(':id')
-  async findOne(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() currentUser: any,
-  ) {
+  async findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() currentUser: any) {
     // Check if user is admin or viewing their own profile
     if (currentUser.role !== UserRole.ADMIN && currentUser.userId !== id) {
       throw new Error('Unauthorized to view this user');

@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Patch,
-  Body,
-  UseGuards,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Get, Patch, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { StudentsService } from './students.service';
 import { UpdateStudentProfileDto } from './dto';
 import { JwtAuthGuard, RolesGuard } from '@modules/auth/guards';

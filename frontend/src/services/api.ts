@@ -8,7 +8,11 @@ import type {
   PastPapersResponse,
   PastPapersFilter,
   CampusesResponse,
-  POIsResponse
+  POIsResponse,
+  BoardingPost,
+  BoardingFilters,
+  StudentProfile,
+  UpdateStudentProfileRequest,
 } from '@/types';
 
 /**
@@ -112,6 +116,51 @@ class ApiService {
   }
 
   /**
+   * Get boarding posts with optional filtering.
+   *
+   * Maps the frontend BoardingFilters shape onto the exact query params
+   * expected by the backend GetBoardingFilterDto:
+   *   location  → ILIKE '%value%' on locationDetails
+   *   minPrice  → monthlyRent >= value
+   *   maxPrice  → monthlyRent <= value
+   *   available → isAvailable = true | false
+   *
+   * Only appends a param when it has a meaningful value so the URL stays clean.
+   */
+  async getBoardingPosts(filters?: Partial<BoardingFilters>): Promise<BoardingPost[]> {
+    const params = new URLSearchParams();
+
+    if (filters?.location?.trim()) {
+      params.append('location', filters.location.trim());
+    }
+    if (filters?.minPrice && filters.minPrice !== '') {
+      params.append('minPrice', filters.minPrice);
+    }
+    if (filters?.maxPrice && filters.maxPrice !== '') {
+      params.append('maxPrice', filters.maxPrice);
+    }
+    // Only send the 'available' param when explicitly set (not null)
+    if (filters?.available !== null && filters?.available !== undefined) {
+      params.append('available', String(filters.available));
+    }
+
+    const queryString = params.toString();
+    const url = queryString ? `/boarding?${queryString}` : '/boarding';
+
+    const response = await this.api.get<BoardingPost[]>(url);
+    return response.data;
+  }
+
+  /**
+   * Get a single boarding post by ID (includes provider relation).
+   * GET /api/v1/boarding/:id
+   */
+  async getBoardingPostById(postId: number): Promise<BoardingPost> {
+    const response = await this.api.get<BoardingPost>(`/boarding/${postId}`);
+    return response.data;
+  }
+
+  /**
    * Get all campuses (Public endpoint - no auth required)
    */
   async getAllCampuses(): Promise<CampusesResponse> {
@@ -128,6 +177,26 @@ class ApiService {
     const response = await axios.get<POIsResponse>(
       `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1'}/campus-guide/pois/${campusId}`
     );
+    return response.data;
+  }
+
+  /**
+   * Get the current student's profile.
+   * GET /api/v1/students/profile
+   * Requires: student role JWT
+   */
+  async getStudentProfile(): Promise<StudentProfile> {
+    const response = await this.api.get<StudentProfile>('/students/profile');
+    return response.data;
+  }
+
+  /**
+   * Update the current student's profile.
+   * PATCH /api/v1/students/profile
+   * Requires: student role JWT
+   */
+  async updateStudentProfile(data: UpdateStudentProfileRequest): Promise<StudentProfile> {
+    const response = await this.api.patch<StudentProfile>('/students/profile', data);
     return response.data;
   }
 

@@ -11,8 +11,14 @@ import { User } from '@modules/users/entities';
 
 /**
  * BoardingPost Entity
- * Represents the boarding_posts table in the database
- * Contains accommodation listings created by boarding providers
+ * Represents the boarding_posts table in the database.
+ * Contains accommodation listings created by boarding providers.
+ *
+ * Changelog:
+ *  - Added `images` column: stores an array of server-relative file paths
+ *    (e.g. ["/uploads/boarding/abc123.jpg"]).  TypeORM's "simple-array" type
+ *    serialises this as a comma-separated TEXT column — no schema migration needed
+ *    beyond adding the column.
  */
 @Entity('boarding_posts')
 export class BoardingPost {
@@ -36,6 +42,14 @@ export class BoardingPost {
 
   @Column({ name: 'location_details', type: 'varchar', length: 500, nullable: true })
   locationDetails: string;
+
+  /**
+   * Stored image file paths relative to the server root.
+   * e.g. ["/uploads/boarding/abc.jpg", "/uploads/boarding/xyz.jpg"]
+   * TypeORM "simple-array" stores this as a single TEXT column with comma-separated values.
+   */
+  @Column({ name: 'images', type: 'simple-array', nullable: true, default: null })
+  images: string[];
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp with time zone' })
   createdAt: Date;

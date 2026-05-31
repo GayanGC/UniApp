@@ -2,13 +2,14 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_GUARD } from '@nestjs/core';
-import { databaseConfig, jwtConfig, typeOrmConfig } from '@config';
+import { databaseConfig, jwtConfig, typeOrmConfig } from './config';
 import { AuthModule } from '@modules/auth/auth.module';
 import { UsersModule } from '@modules/users/users.module';
 import { StudentsModule } from '@modules/students/students.module';
 import { BoardingModule } from '@modules/boarding/boarding.module';
 import { PastPapersModule } from '@modules/past-papers/past-papers.module';
 import { CampusGuideModule } from '@modules/campus-guide/campus-guide.module';
+import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { JwtAuthGuard } from '@modules/auth/guards';
 
 /**
@@ -38,9 +39,12 @@ import { JwtAuthGuard } from '@modules/auth/guards';
         entities: typeOrmConfig.entities,
         synchronize: configService.get<boolean>('database.synchronize'),
         logging: configService.get<boolean>('database.logging'),
-        ssl: configService.get<string>('NODE_ENV') === 'production' ? {
-          rejectUnauthorized: false,
-        } : false,
+        ssl:
+          configService.get<string>('NODE_ENV') === 'production'
+            ? {
+                rejectUnauthorized: false,
+              }
+            : false,
       }),
     }),
 
@@ -51,6 +55,7 @@ import { JwtAuthGuard } from '@modules/auth/guards';
     BoardingModule,
     PastPapersModule,
     CampusGuideModule,
+    NotificationsModule,
   ],
   providers: [
     // Apply JWT guard globally
