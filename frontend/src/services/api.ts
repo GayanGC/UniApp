@@ -18,6 +18,16 @@ import type {
   Conversation,
   BoardingReview,
   ProviderAnalytics,
+  ResourceItem,
+  Complaint,
+  ComplaintStatus,
+  PaymentInvoice,
+  FinanceSummary,
+  ChartDataPoint,
+  LocalMerchant,
+  CampusEvent,
+  AlumniFeed,
+  AnonymousComplaintDto,
 } from '@/types';
 
 /**
@@ -78,8 +88,40 @@ class ApiService {
   /**
    * Login user
    */
-  async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await this.api.post<AuthResponse>('/auth/login', credentials);
+  async login(credentials: LoginRequest): Promise<AuthResponse & { requires2FA?: boolean; userId?: number }> {
+    const response = await this.api.post<AuthResponse & { requires2FA?: boolean; userId?: number }>('/auth/login', credentials);
+    return response.data;
+  }
+
+  /**
+   * Google Login
+   */
+  async googleLogin(token: string): Promise<AuthResponse & { requires2FA?: boolean; userId?: number }> {
+    const response = await this.api.post<AuthResponse & { requires2FA?: boolean; userId?: number }>('/auth/google', { token });
+    return response.data;
+  }
+
+  /**
+   * 2FA Generate
+   */
+  async generate2FA(): Promise<{ qrCodeDataUrl: string }> {
+    const response = await this.api.post<{ qrCodeDataUrl: string }>('/auth/2fa/generate');
+    return response.data;
+  }
+
+  /**
+   * 2FA Turn On
+   */
+  async turnOn2FA(code: string): Promise<{ success: boolean }> {
+    const response = await this.api.post<{ success: boolean }>('/auth/2fa/turn-on', { code });
+    return response.data;
+  }
+
+  /**
+   * 2FA Authenticate
+   */
+  async authenticate2FA(userId: string, code: string): Promise<AuthResponse> {
+    const response = await this.api.post<AuthResponse>('/auth/2fa/authenticate', { userId, code });
     return response.data;
   }
 
@@ -193,6 +235,136 @@ class ApiService {
     const response = await this.api.get<ProviderAnalytics>('/boarding/provider/analytics');
     return response.data;
   }
+
+  // ==========================================
+  // Resources Endpoints
+  // ==========================================
+
+  /**
+   * Get all resources (Past papers and lecture notes) with optional filters
+   */
+  async getResources(filters?: Record<string, string>): Promise<ResourceItem[]> {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, value);
+      });
+    }
+    const response = await this.api.get<ResourceItem[]>(`/resources?${params.toString()}`);
+    return response.data;
+  }
+
+  /**
+   * Upload a new resource
+   */
+  async uploadResource(formData: FormData): Promise<ResourceItem> {
+    const response = await this.api.post<ResourceItem>('/resources/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
+  // ==========================================
+  // Complaints Endpoints
+  // ==========================================
+
+  /**
+   * Submit a new complaint
+   */
+  async submitComplaint(data: { title: string; description: string; category: string }): Promise<Complaint> {
+    const response = await this.api.post<Complaint>('/complaints', data);
+    return response.data;
+  }
+
+  /**
+   * Get complaints for the current student
+   */
+  async getMyComplaints(): Promise<Complaint[]> {
+    const response = await this.api.get<Complaint[]>('/complaints/my');
+    return response.data;
+  }
+
+  /**
+   * Get all system complaints (Admin only)
+   */
+  async getAdminComplaints(): Promise<Complaint[]> {
+    const response = await this.api.get<Complaint[]>('/complaints/admin');
+    return response.data;
+  }
+
+  // ==========================================
+  // Lifestyle & Events
+  // ==========================================
+  
+  async getLocalMerchants(campusId: number): Promise<LocalMerchant[]> {
+    const response = await this.api.get<LocalMerchant[]>(`/lifestyle/campus/${campusId}/merchants`);
+    return response.data;
+  }
+
+  async getCampusEvents(campusId: number): Promise<CampusEvent[]> {
+    const response = await this.api.get<CampusEvent[]>(`/lifestyle/campus/${campusId}/events`);
+    return response.data;
+  }
+
+  // ==========================================
+  // Alumni Insights
+  // ==========================================
+  
+  async getAlumniFeed(): Promise<AlumniFeed[]> {
+    const response = await this.api.get<AlumniFeed[]>('/alumni/feed');
+    return response.data;
+  }
+
+  // ==========================================
+  // Safety & Anti-Ragging
+  // ==========================================
+  
+  async submitAnonymousComplaint(data: AnonymousComplaintDto): Promise<{ success: boolean; message: string }> {
+    const response = await this.api.post<{ success: boolean; message: string }>('/safety/anti-ragging', data);
+    return response.data;
+  }
+
+  /**
+   * Update complaint status (Admin only)
+   */
+  async updateComplaintStatus(id: string, status: ComplaintStatus): Promise<Complaint> {
+    const response = await this.api.patch<Complaint>(`/complaints/admin/${id}/status`, { status });
+    return response.data;
+  }
+
+  // ==========================================
+  // Finance & Scholarships Endpoints
+  // ==========================================
+
+  /**
+   * Get financial summary metrics
+   */
+  async getFinanceSummary(): Promise<FinanceSummary> {
+    const response = await this.api.get<FinanceSummary>('/finance/summary');
+    return response.data;
+  }
+
+  /**
+   * Get all invoices
+   */
+  async getFinanceInvoices(): Promise<PaymentInvoice[]> {
+    const response = await this.api.get<PaymentInvoice[]>('/finance/invoices');
+    return response.data;
+  }
+
+  /**
+   * Get chart data
+   */
+  async getFinanceChartData(): Promise<ChartDataPoint[]> {
+    const response = await this.api.get<ChartDataPoint[]>('/finance/chart');
+    return response.data;
+  }
+
+  // ==========================================
+  // Campus Endpoints
+  // ==========================================
 
   /**
    * Get all campuses (Public endpoint - no auth required)

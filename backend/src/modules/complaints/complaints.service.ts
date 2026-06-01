@@ -1,41 +1,69 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Complaint } from './complaint.entity';
-import { CreateComplaintDto } from './dto/create-complaint.dto';
-import { UpdateComplaintDto } from './dto/update-complaint.dto';
+import { Complaint, ComplaintStatus } from './complaint.entity';
+import { CreateComplaintDto, UpdateComplaintStatusDto } from './dto';
+import { NotificationsGateway } from '@modules/notifications/notifications.gateway';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class ComplaintsService {
   constructor(
     @InjectRepository(Complaint)
-    private complaintsRepository: Repository<Complaint>,
+    private readonly complaintRepository: Repository<Complaint>,
+    private readonly notificationsGateway: NotificationsGateway,
   ) {}
 
-  async submitComplaint(dto: CreateComplaintDto, userId: number | null): Promise<Complaint> {
-    const complaint = this.complaintsRepository.create({
-      ...dto,
-      submitted_by_user: userId ? { userId: userId } : null,
-      status: 'Pending',
+  async createComplaint(studentId: number, dto: CreateComplaintDto): Promise<Complaint> {
+    const complaint = this.complaintRepository.create({
+      title: dto.title,
+      description: dto.description,
+      category: dto.category,
+      studentId,
+      status: ComplaintStatus.PENDING,
     });
-    return await this.complaintsRepository.save(complaint);
+    return await this.complaintRepository.save(complaint);
   }
 
-  async getAllComplaints(page = 1, limit = 20): Promise<[Complaint[], number]> {
-    return await this.complaintsRepository.findAndCount({
-      relations: ['submitted_by_user'],
-      order: { submission_date: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
+  async getStudentComplaints(studentId: number): Promise<Complaint[]> {
+    return await this.complaintRepository.find({
+      where: { studentId },
+      order: { createdAt: 'DESC' },
     });
   }
 
-  async updateComplaint(complaintId: number, dto: UpdateComplaintDto): Promise<Complaint> {
-    const complaint = await this.complaintsRepository.findOne({
-      where: { complaint_id: complaintId },
+  async getAllComplaints(): Promise<Complaint[]> {
+    return await this.complaintRepository.find({
+      relations: ['student'],
+      select: {
+        student: {
+          userId: true,
+          fullName: true,
+          email: true,
+        },
+      },
+      order: { createdAt: 'DESC' },
     });
-    if (!complaint) throw new Error('Complaint not found');
-    Object.assign(complaint, dto);
-    return await this.complaintsRepository.save(complaint);
+  }
+
+  async updateComplaintStatus(id: string, dto: UpdateComplaintStatusDto): Promise<Complaint> {
+    const complaint = await this.complaintRepository.findOne({ where: { id } });
+    if (!complaint) {
+      throw new NotFoundException('Complaint not found');
+    }
+
+    complaint.status = dto.status;
+    const updated = await this.complaintRepository.save(complaint);
+
+    // Notify student via Socket.IO
+    this.notificationsGateway.sendToUser(complaint.studentId, {
+      id: uuidv4(),
+      title: 'Complaint Status Updated',
+      message: `Your complaint "${complaint.title}" has been updated to ${dto.status}.`,
+      type: 'info',
+      createdAt: new Date().toISOString(),
+    });
+
+    return updated;
   }
 }

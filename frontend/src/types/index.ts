@@ -72,9 +72,13 @@ export interface AuthContextType {
   token: string | null;
   loading: boolean;
   isAuthenticated: boolean;
-  login: (credentials: LoginRequest) => Promise<void>;
+  isLoading: boolean;
+  login: (credentials: LoginRequest) => Promise<{ requires2FA?: boolean; userId?: number } | void>;
+  googleLogin: (token: string) => Promise<{ requires2FA?: boolean; userId?: number } | void>;
+  authenticate2FA: (userId: string, code: string) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => void;
+  updateUser: (user: User) => void;
 }
 
 /**
@@ -322,5 +326,133 @@ export interface ProviderAnalytics {
     rating: number;
     count: number;
   }>;
+}
+
+/**
+ * Academic Resource Interface (Past Papers & Lecture Notes)
+ */
+export interface ResourceItem {
+  id: string;
+  title: string;
+  subjectCode: string;
+  year: string;
+  semester: number;
+  type: string;
+  filePath: string;
+  uploaderId: number;
+  uploadedAt: string;
+  uploader?: {
+    userId: number;
+    fullName: string;
+  };
+}
+
+/**
+ * Complaint Status Enum
+ */
+export enum ComplaintStatus {
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  RESOLVED = 'RESOLVED',
+}
+
+/**
+ * Complaint Interface
+ */
+export interface Complaint {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  status: ComplaintStatus;
+  studentId: number;
+  createdAt: string;
+  student?: {
+    userId: number;
+    fullName: string;
+    email: string;
+  };
+}
+
+/**
+ * Finance Interfaces
+ */
+export enum InvoiceType {
+  DEBIT = 'DEBIT',
+  CREDIT = 'CREDIT',
+}
+
+export enum InvoiceStatus {
+  PAID = 'PAID',
+  PENDING = 'PENDING',
+}
+
+export interface PaymentInvoice {
+  id: string;
+  title: string;
+  amount: number;
+  type: InvoiceType;
+  status: InvoiceStatus;
+  date: string;
+  studentId: number;
+}
+
+export interface FinanceSummary {
+  totalDue: number;
+  totalPaid: number;
+  activeScholarships: number;
+}
+
+export interface ChartDataPoint {
+  month: string;
+  paid: number;
+  received: number;
+}
+
+/**
+ * Lifestyle & Offers
+ */
+export interface LocalMerchant {
+  id: string;
+  name: string;
+  category: string;
+  discountDescription: string;
+  couponCode: string | null;
+  campusId: number;
+}
+
+export interface CampusEvent {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  registrationLink: string | null;
+  campusId: number;
+}
+
+/**
+ * Alumni Insights
+ */
+export interface AlumniFeed {
+  id: string;
+  content: string;
+  company: string;
+  role: string;
+  createdAt: string;
+  authorId: number;
+  author?: {
+    userId: number;
+    fullName: string;
+  };
+}
+
+/**
+ * Safety & Anti-Ragging
+ */
+export interface AnonymousComplaintDto {
+  incidentDescription: string;
+  location: string;
+  dateOfIncident: string;
+  isUrgent: boolean;
 }
 

@@ -1,13 +1,54 @@
-'use client';
-
+import React, { useEffect, useState } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
+import { UserRole, Complaint, ComplaintStatus } from '@/types';
+import { GraduationCap, Users, Home, LogOut, Settings, BarChart, ShieldAlert, CheckCircle2, Clock, Loader2 } from 'lucide-react';
+import { apiService } from '@/services/api';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
-import { UserRole } from '@/types';
-import { GraduationCap, Users, Home, LogOut, Settings, BarChart } from 'lucide-react';
 
 function AdminDashboardContent() {
   const { user, logout } = useAuth();
+  
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchComplaints();
+  }, []);
+
+  const fetchComplaints = async () => {
+    try {
+      const data = await apiService.getAdminComplaints();
+      setComplaints(data);
+    } catch (err) {
+      console.error('Failed to load complaints', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStatusChange = async (id: string, newStatus: ComplaintStatus) => {
+    try {
+      await apiService.updateComplaintStatus(id, newStatus);
+      toast.success(`Status updated to ${newStatus}`);
+      // Optimistic update
+      setComplaints((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, status: newStatus } : c))
+      );
+    } catch (err) {
+      toast.error('Failed to update status');
+      console.error(err);
+    }
+  };
+
+  const getStatusColor = (status: ComplaintStatus) => {
+    switch (status) {
+      case ComplaintStatus.RESOLVED: return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case ComplaintStatus.IN_PROGRESS: return 'bg-blue-50 text-blue-700 border-blue-200';
+      default: return 'bg-amber-50 text-amber-700 border-amber-200';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -76,36 +117,79 @@ function AdminDashboardContent() {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-              <Users className="w-6 h-6 text-blue-600" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-2">Manage Users</h3>
-            <p className="text-sm text-gray-600">
-              View and manage all registered users
-            </p>
+        {/* Premium Complaints Table */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+          <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-red-500" />
+              System Complaints
+            </h3>
+            <span className="bg-gray-200 text-gray-700 text-xs px-2.5 py-1 rounded-full font-medium">
+              {complaints.length} Total
+            </span>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer">
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-              <Home className="w-6 h-6 text-green-600" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-2">Manage Listings</h3>
-            <p className="text-sm text-gray-600">
-              Oversee all boarding accommodation listings
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer">
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-              <Settings className="w-6 h-6 text-purple-600" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-2">Settings</h3>
-            <p className="text-sm text-gray-600">
-              Configure platform settings and preferences
-            </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-gray-600">
+              <thead className="bg-gray-50 text-xs uppercase text-gray-500 border-b border-gray-100">
+                <tr>
+                  <th className="px-6 py-4 font-semibold">Student</th>
+                  <th className="px-6 py-4 font-semibold">Category</th>
+                  <th className="px-6 py-4 font-semibold">Subject</th>
+                  <th className="px-6 py-4 font-semibold">Date</th>
+                  <th className="px-6 py-4 font-semibold">Status Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {loading ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-gray-400">
+                      <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                      Loading complaints...
+                    </td>
+                  </tr>
+                ) : complaints.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-gray-400">
+                      No complaints lodged yet.
+                    </td>
+                  </tr>
+                ) : (
+                  complaints.map((complaint) => (
+                    <tr key={complaint.id} className="hover:bg-gray-50/50 transition">
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-gray-900">{complaint.student?.fullName || 'Unknown'}</div>
+                        <div className="text-xs text-gray-400">{complaint.student?.email}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="bg-gray-100 text-gray-600 px-2.5 py-1 rounded-md text-xs font-medium">
+                          {complaint.category}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-gray-900 truncate max-w-[200px]" title={complaint.title}>
+                          {complaint.title}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-xs text-gray-500">
+                        {new Date(complaint.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <select
+                          value={complaint.status}
+                          onChange={(e) => handleStatusChange(complaint.id, e.target.value as ComplaintStatus)}
+                          className={`text-xs font-semibold rounded-full px-3 py-1.5 border outline-none cursor-pointer transition ${getStatusColor(complaint.status)}`}
+                        >
+                          <option value={ComplaintStatus.PENDING}>PENDING</option>
+                          <option value={ComplaintStatus.IN_PROGRESS}>IN PROGRESS</option>
+                          <option value={ComplaintStatus.RESOLVED}>RESOLVED</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 

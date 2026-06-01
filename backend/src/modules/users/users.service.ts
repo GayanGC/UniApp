@@ -206,4 +206,18 @@ export class UsersService {
   async validatePassword(user: User, password: string): Promise<boolean> {
     return await bcrypt.compare(password, user.passwordHash);
   }
+
+  /**
+   * Update 2FA secret
+   */
+  async updateTwoFactorSecret(userId: number, secret: string): Promise<void> {
+    await this.userRepository.update(userId, { twoFactorSecret: secret });
+  }
+
+  /**
+   * Enable 2FA for user
+   */
+  async enableTwoFactor(userId: number): Promise<void> {
+    await this.userRepository.update(userId, { isTwoFactorEnabled: true });
+  }
 }

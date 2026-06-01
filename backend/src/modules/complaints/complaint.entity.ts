@@ -1,36 +1,36 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from '@modules/users/entities';
+
+export enum ComplaintStatus {
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  RESOLVED = 'RESOLVED',
+}
 
 @Entity('complaints')
 export class Complaint {
-  @PrimaryGeneratedColumn()
-  complaint_id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column({ length: 255 })
-  subject: string;
+  @Column({ type: 'varchar', length: 255 })
+  title: string;
 
-  @Column('text')
+  @Column({ type: 'text' })
   description: string;
 
-  @Column({ length: 100 })
+  @Column({ type: 'varchar', length: 100 })
   category: string;
 
-  @Column({ length: 100 })
-  university: string;
+  @Column({ type: 'enum', enum: ComplaintStatus, default: ComplaintStatus.PENDING })
+  status: ComplaintStatus;
 
-  @Column({ type: 'boolean', default: false })
-  is_anonymous: boolean;
+  @Column({ name: 'student_id', type: 'integer' })
+  studentId: number;
 
-  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'submitted_by_user_id' })
-  submitted_by_user: User | null;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamp with time zone' })
+  createdAt: Date;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  submission_date: Date;
-
-  @Column({ length: 50, default: 'Pending' })
-  status: string;
-
-  @Column({ type: 'text', nullable: true })
-  admin_notes: string | null;
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'student_id' })
+  student: User;
 }

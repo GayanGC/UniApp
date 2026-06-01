@@ -1,18 +1,15 @@
-import { IsString, IsBoolean } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateComplaintDto {
   @IsString()
-  subject: string;
+  @IsNotEmpty()
+  title: string;
 
   @IsString()
+  @IsNotEmpty()
   description: string;
 
   @IsString()
+  @IsNotEmpty()
   category: string;
-
-  @IsString()
-  university: string;
-
-  @IsBoolean()
-  is_anonymous: boolean;
 }

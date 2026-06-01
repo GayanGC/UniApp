@@ -67,67 +67,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const handleAuthSuccess = (user: User, accessToken: string) => {
+    Cookies.set('auth_token', accessToken, { 
+      expires: 7,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+    Cookies.set('user', JSON.stringify(user), { 
+      expires: 7,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+
+    setToken(accessToken);
+    setUser(user);
+
+    const dashboardRoute = getDashboardRoute(user.role);
+    router.push(dashboardRoute);
+  };
+
   /**
    * Login user
    */
-  const login = useCallback(async (credentials: LoginRequest) => {
+  const login = async (credentials: LoginRequest) => {
     try {
       const response = await apiService.login(credentials);
-      
-      // Store token and user in cookies
-      Cookies.set('auth_token', response.accessToken, { 
-        expires: 7, // 7 days
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-      });
-      Cookies.set('user', JSON.stringify(response.user), { 
-        expires: 7,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-      });
-
-      setToken(response.accessToken);
-      setUser(response.user);
-
-      // Redirect based on role
-      const dashboardRoute = getDashboardRoute(response.user.role);
-      router.push(dashboardRoute);
-    } catch (error: any) {
-      console.error('Login error:', error);
+      if (response.requires2FA) {
+        return { requires2FA: true, userId: response.userId };
+      }
+      handleAuthSuccess(response.user, response.accessToken);
+      return {};
+    } catch (error) {
       throw error;
     }
-  }, [router, getDashboardRoute]);
+  };
+
+  const googleLogin = async (token: string) => {
+    try {
+      const response = await apiService.googleLogin(token);
+      if (response.requires2FA) {
+        return { requires2FA: true, userId: response.userId };
+      }
+      handleAuthSuccess(response.user, response.accessToken);
+      return {};
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const authenticate2FA = async (userId: string, code: string) => {
+    try {
+      const response = await apiService.authenticate2FA(userId, code);
+      handleAuthSuccess(response.user, response.accessToken);
+    } catch (error) {
+      throw error;
+    }
+  };
 
   /**
    * Register new user
    */
-  const register = useCallback(async (data: RegisterRequest) => {
+  const register = async (data: RegisterRequest) => {
     try {
       const response = await apiService.register(data);
-      
-      // Store token and user in cookies
-      Cookies.set('auth_token', response.accessToken, { 
-        expires: 7,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-      });
-      Cookies.set('user', JSON.stringify(response.user), { 
-        expires: 7,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-      });
-
-      setToken(response.accessToken);
-      setUser(response.user);
-
-      // Redirect based on role
-      const dashboardRoute = getDashboardRoute(response.user.role);
-      router.push(dashboardRoute);
-    } catch (error: any) {
-      console.error('Registration error:', error);
+      handleAuthSuccess(response.user, response.accessToken);
+    } catch (error) {
       throw error;
     }
-  }, [router, getDashboardRoute]);
+  };
 
   /**
    * Logout user
@@ -140,14 +147,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/login');
   }, [router]);
 
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    Cookies.set('user', JSON.stringify(updatedUser), { 
+      expires: 7,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+  };
+
   const value: AuthContextType = {
     user,
     token,
     loading: isLoading,
     isAuthenticated: !!user && !!token,
+    isLoading,
     login,
+    googleLogin,
+    authenticate2FA,
     register,
     logout,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,6 +1,6 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Get } from '@nestjs/common';
 import { AuthService, AuthResponse } from './auth.service';
-import { RegisterDto, LoginDto } from './dto';
+import { RegisterDto, LoginDto, GoogleLoginDto, Verify2FADto, Authenticate2FADto } from './dto';
 import { Public, CurrentUser } from '@common/decorators';
 import { JwtAuthGuard } from './guards';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
@@ -58,5 +58,54 @@ export class AuthController {
       email: user.email,
       role: user.role,
     };
+  }
+
+  /**
+   * Google OAuth2 Login
+   * POST /api/v1/auth/google
+   */
+  @Public()
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login with Google OAuth2' })
+  async googleLogin(@Body() googleLoginDto: GoogleLoginDto): Promise<AuthResponse> {
+    return await this.authService.googleLogin(googleLoginDto);
+  }
+
+  /**
+   * Generate 2FA Secret and QR Code
+   * POST /api/v1/auth/2fa/generate
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('2fa/generate')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Generate TOTP secret and QR code' })
+  async generate2FA(@CurrentUser() user: any) {
+    return await this.authService.generateTwoFactorAuthSecret(user);
+  }
+
+  /**
+   * Turn On 2FA
+   * POST /api/v1/auth/2fa/turn-on
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('2fa/turn-on')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Turn on 2FA by verifying the first code' })
+  async turnOn2FA(@CurrentUser() user: any, @Body() body: Verify2FADto) {
+    return await this.authService.turnOnTwoFactorAuthentication(user.userId, body.code);
+  }
+
+  /**
+   * Authenticate 2FA (Exchange Code for JWT)
+   * POST /api/v1/auth/2fa/authenticate
+   */
+  @Public()
+  @Post('2fa/authenticate')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Exchange 2FA code for JWT token' })
+  async authenticate2FA(@Body() body: Authenticate2FADto): Promise<AuthResponse> {
+    return await this.authService.authenticate2FA(Number(body.userId), body.code);
   }
 }

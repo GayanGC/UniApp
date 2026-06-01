@@ -11,6 +11,12 @@ import { PastPapersModule } from '@modules/past-papers/past-papers.module';
 import { CampusGuideModule } from '@modules/campus-guide/campus-guide.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { ChatModule } from '@modules/chat/chat.module';
+import { ResourcesModule } from '@modules/resources/resources.module';
+import { ComplaintsModule } from '@modules/complaints/complaints.module';
+import { FinanceModule } from '@modules/finance/finance.module';
+import { LifestyleModule } from '@modules/lifestyle/lifestyle.module';
+import { AlumniModule } from '@modules/alumni/alumni.module';
+import { SafetyModule } from '@modules/safety/safety.module';
 import { JwtAuthGuard } from '@modules/auth/guards';
 
 /**
@@ -58,6 +64,12 @@ import { JwtAuthGuard } from '@modules/auth/guards';
     CampusGuideModule,
     NotificationsModule,
     ChatModule,
+    ResourcesModule,
+    ComplaintsModule,
+    FinanceModule,
+    LifestyleModule,
+    AlumniModule,
+    SafetyModule,
   ],
   providers: [
     // Apply JWT guard globally

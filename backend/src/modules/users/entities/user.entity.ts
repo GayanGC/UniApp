@@ -39,6 +39,13 @@ export class User {
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
 
+  @Column({ name: 'is_two_factor_enabled', type: 'boolean', default: false })
+  isTwoFactorEnabled: boolean;
+
+  @Column({ name: 'two_factor_secret', type: 'varchar', nullable: true })
+  @Exclude()
+  twoFactorSecret: string;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamp with time zone' })
   createdAt: Date;
 
