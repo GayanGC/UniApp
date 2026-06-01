@@ -142,6 +142,19 @@ export class NotificationsGateway
     this.logger.log(`📣 Broadcast notification: "${payload.title}"`);
   }
 
+  /**
+   * Emit a generic event with payload to a specific user.
+   * Useful for modules (like Chat) that share this namespace.
+   */
+  emitToUser(userId: number, event: string, payload: any): void {
+    const sockets = this.userSockets.get(userId);
+    if (!sockets || sockets.size === 0) return;
+
+    sockets.forEach((socketId) => {
+      this.server.to(socketId).emit(event, payload);
+    });
+  }
+
   /* ─────────────────────────────────────────────────────────────
      Client → Server events
   ───────────────────────────────────────────────────────────── */

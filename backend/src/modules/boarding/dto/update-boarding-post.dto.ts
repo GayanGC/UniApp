@@ -28,6 +28,14 @@ export class UpdateBoardingPostDto {
   @MaxLength(500, { message: 'Location details must not exceed 500 characters' })
   locationDetails?: string;
 
+  @IsNumber()
+  @IsOptional()
+  latitude?: number;
+
+  @IsNumber()
+  @IsOptional()
+  longitude?: number;
+
   /** Replaced image paths — set by the controller after Multer processes uploads */
   @IsArray()
   @IsString({ each: true })

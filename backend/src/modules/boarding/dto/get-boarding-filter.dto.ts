@@ -50,4 +50,22 @@ export class GetBoardingFilterDto {
   @IsBoolean({ message: 'available must be a boolean (true or false)' })
   @IsOptional()
   available?: boolean;
+
+  /**
+   * Page number for pagination
+   */
+  @Type(() => Number)
+  @IsNumber({}, { message: 'page must be a valid number' })
+  @Min(1, { message: 'page must be at least 1' })
+  @IsOptional()
+  page?: number = 1;
+
+  /**
+   * Number of items per page
+   */
+  @Type(() => Number)
+  @IsNumber({}, { message: 'limit must be a valid number' })
+  @Min(1, { message: 'limit must be at least 1' })
+  @IsOptional()
+  limit?: number = 10;
 }

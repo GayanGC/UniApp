@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BoardingService } from './boarding.service';
+import { BoardingReviewService } from './boarding-review.service';
 import { BoardingController } from './boarding.controller';
-import { BoardingPost } from './entities';
+import { BoardingReviewController } from './boarding-review.controller';
+import { BoardingPost, BoardingReview } from './entities';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
 
 /**
@@ -14,11 +16,11 @@ import { NotificationsModule } from '@modules/notifications/notifications.module
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([BoardingPost]),
+    TypeOrmModule.forFeature([BoardingPost, BoardingReview]),
     NotificationsModule,
   ],
-  controllers: [BoardingController],
-  providers: [BoardingService],
+  controllers: [BoardingController, BoardingReviewController],
+  providers: [BoardingService, BoardingReviewService],
   exports: [BoardingService],
 })
 export class BoardingModule {}

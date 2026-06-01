@@ -87,8 +87,8 @@ export class BoardingService {
    * @param filterDto - Validated query parameters from the request
    * @returns Array of matching boarding posts with provider info
    */
-  async findAllWithFilters(filterDto: GetBoardingFilterDto): Promise<BoardingPost[]> {
-    const { location, minPrice, maxPrice, available } = filterDto;
+  async findAllWithFilters(filterDto: GetBoardingFilterDto): Promise<{ data: BoardingPost[], total: number, page: number, lastPage: number }> {
+    const { location, minPrice, maxPrice, available, page = 1, limit = 10 } = filterDto;
 
     // Start with an empty where-clause object; only add conditions for provided filters.
     const where: FindOptionsWhere<BoardingPost> = {};
@@ -117,10 +117,12 @@ export class BoardingService {
       where.monthlyRent = LessThanOrEqual(maxPrice);
     }
 
-    return await this.boardingPostRepository.find({
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await this.boardingPostRepository.findAndCount({
       where,
       order: { createdAt: 'DESC' },
-      relations: ['provider'],
+      relations: ['provider', 'reviews'],
       select: {
         provider: {
           userId: true,
@@ -128,7 +130,16 @@ export class BoardingService {
           email: true,
         },
       },
+      take: limit,
+      skip,
     });
+
+    return {
+      data,
+      total,
+      page,
+      lastPage: Math.ceil(total / limit),
+    };
   }
 
   /**
@@ -139,7 +150,7 @@ export class BoardingService {
   async findOne(postId: number): Promise<BoardingPost> {
     const post = await this.boardingPostRepository.findOne({
       where: { postId },
-      relations: ['provider'],
+      relations: ['provider', 'reviews'],
       select: {
         provider: {
           userId: true,
@@ -242,5 +253,53 @@ export class BoardingService {
     } catch (error) {
       throw new InternalServerErrorException('Failed to delete boarding post');
     }
+  }
+
+  /**
+   * Get analytics for a specific provider
+   * @param providerUserId - ID of the boarding provider
+   */
+  async getProviderAnalytics(providerUserId: number) {
+    const posts = await this.boardingPostRepository.find({
+      where: { providerUserId },
+      relations: ['reviews'],
+    });
+
+    const totalPosts = posts.length;
+    let totalReviewsCount = 0;
+    let totalRatingSum = 0;
+    
+    // Initialize distribution array for 1-5 stars
+    const ratingDistribution = [
+      { rating: 1, count: 0 },
+      { rating: 2, count: 0 },
+      { rating: 3, count: 0 },
+      { rating: 4, count: 0 },
+      { rating: 5, count: 0 },
+    ];
+
+    for (const post of posts) {
+      if (post.reviews && post.reviews.length > 0) {
+        totalReviewsCount += post.reviews.length;
+        for (const review of post.reviews) {
+          totalRatingSum += review.rating;
+          const index = ratingDistribution.findIndex(r => r.rating === review.rating);
+          if (index !== -1) {
+            ratingDistribution[index].count++;
+          }
+        }
+      }
+    }
+
+    const averageRating = totalReviewsCount > 0 
+      ? Number((totalRatingSum / totalReviewsCount).toFixed(1)) 
+      : 0;
+
+    return {
+      totalPosts,
+      totalReviewsCount,
+      averageRating,
+      ratingDistribution,
+    };
   }
 }

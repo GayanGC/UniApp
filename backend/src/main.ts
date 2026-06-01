@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { join } from 'path';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -50,6 +51,16 @@ async function bootstrap() {
   // Global prefix
   const apiPrefix = configService.get<string>('API_PREFIX', 'api/v1');
   app.setGlobalPrefix(apiPrefix);
+
+  // Swagger OpenAPI Configuration
+  const config = new DocumentBuilder()
+    .setTitle('Uni App API')
+    .setDescription('The backend API documentation for Uni App')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
 
   // Start server
   const port = configService.get<number>('PORT', 3000);

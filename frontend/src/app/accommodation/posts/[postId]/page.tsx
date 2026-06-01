@@ -1,9 +1,15 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+import { Star, User as UserIcon } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
+
+const LocationDisplay = dynamic(() => import('@/components/boarding/LocationDisplay'), { ssr: false });
 import type { BoardingPost } from '@/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:3000';
@@ -27,6 +33,14 @@ export default function BoardingPostDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeImg, setActiveImg] = useState(0);
+
+  const { isAuthenticated } = useAuth();
+  
+  // Review State
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!params?.postId) return;
@@ -72,6 +86,35 @@ export default function BoardingPostDetailPage() {
 
   const images = post.images?.filter(Boolean) ?? [];
   const hasImages = images.length > 0;
+  const reviews = post.reviews ?? [];
+  const reviewCount = reviews.length;
+  const averageRating = reviewCount > 0 
+    ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviewCount).toFixed(1)
+    : null;
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reviewComment.trim()) return;
+    setSubmittingReview(true);
+    setReviewError(null);
+    try {
+      const newReview = await apiService.createBoardingReview(post.postId, {
+        rating: reviewRating,
+        comment: reviewComment.trim(),
+      });
+      // Append the new review to the local state so it shows up immediately
+      setPost({
+        ...post,
+        reviews: [newReview, ...reviews],
+      });
+      setReviewComment('');
+      setReviewRating(5);
+    } catch (err: any) {
+      setReviewError(err?.response?.data?.message ?? err?.message ?? 'Failed to submit review.');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -143,9 +186,20 @@ export default function BoardingPostDetailPage() {
               </div>
             )}
 
-            {/* ── Title & price ── */}
+            {/* ── Title, rating, & price ── */}
             <div>
               <h1 className="text-2xl font-bold text-gray-900 mb-1">{post.title}</h1>
+              <div className="flex items-center gap-2 mb-4">
+                {averageRating ? (
+                  <div className="flex items-center gap-1.5 text-sm font-medium text-gray-700 bg-yellow-50 px-2 py-0.5 rounded border border-yellow-100">
+                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    <span>{averageRating}</span>
+                    <span className="text-gray-400">({reviewCount} Review{reviewCount !== 1 ? 's' : ''})</span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">No reviews yet</span>
+                )}
+              </div>
               <p className="text-3xl font-extrabold text-blue-600">
                 {formatRent(post.monthlyRent)}
                 <span className="text-base font-normal text-gray-400"> / month</span>
@@ -156,9 +210,15 @@ export default function BoardingPostDetailPage() {
             {post.locationDetails && (
               <div className="flex items-start gap-2 bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
                 <span className="text-xl mt-0.5">📍</span>
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-0.5">Location</p>
-                  <p className="text-gray-800 font-medium">{post.locationDetails}</p>
+                <div className="w-full">
+                  <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Location Details</p>
+                  <p className="text-gray-800 font-medium mb-4">{post.locationDetails}</p>
+                  
+                  {post.latitude !== null && post.longitude !== null && (
+                    <div className="mt-2">
+                      <LocationDisplay latitude={Number(post.latitude)} longitude={Number(post.longitude)} />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -191,6 +251,91 @@ export default function BoardingPostDetailPage() {
                   })}
                 </p>
               </div>
+            </div>
+            
+            {/* ── Reviews Section ── */}
+            <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm mt-8">
+              <h2 className="text-lg font-bold text-gray-900 mb-6">Reviews & Ratings</h2>
+              
+              {/* Review List */}
+              <div className="space-y-6 mb-8">
+                {reviews.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-4">Be the first to review this boarding post!</p>
+                ) : (
+                  reviews.map((r) => (
+                    <div key={r.id} className="border-b border-gray-50 pb-6 last:border-0 last:pb-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
+                            {r.student?.fullName?.charAt(0).toUpperCase() || 'U'}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800">{r.student?.fullName || 'Anonymous'}</p>
+                            <p className="text-xs text-gray-400">
+                              {new Date(r.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-0.5">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={`w-4 h-4 ${star <= r.rating ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-2">{r.comment}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Add Review Form */}
+              {isAuthenticated ? (
+                <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Leave a Review</h3>
+                  {reviewError && (
+                    <p className="text-xs text-red-600 bg-red-50 p-2 rounded mb-3 border border-red-100">{reviewError}</p>
+                  )}
+                  <form onSubmit={handleReviewSubmit} className="space-y-4">
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          type="button"
+                          key={star}
+                          onClick={() => setReviewRating(star)}
+                          className="focus:outline-none transition-transform hover:scale-110"
+                        >
+                          <Star
+                            className={`w-6 h-6 ${star <= reviewRating ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-300 text-gray-300'}`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <textarea
+                      required
+                      rows={3}
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                      placeholder="Share your experience with this boarding..."
+                      className="w-full text-sm bg-white border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                    ></textarea>
+                    <button
+                      type="submit"
+                      disabled={submittingReview || !reviewComment.trim()}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+                    >
+                      {submittingReview ? 'Submitting...' : 'Submit Review'}
+                    </button>
+                  </form>
+                </div>
+              ) : (
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 text-center">
+                  <p className="text-sm text-gray-500 mb-2">You must be logged in to leave a review.</p>
+                  <Link href="/login" className="text-sm text-blue-600 font-medium hover:underline">Log in here</Link>
+                </div>
+              )}
             </div>
           </div>
 

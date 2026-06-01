@@ -17,6 +17,8 @@ import type { NotificationItem } from '@/types';
 ───────────────────────────────────────────────────────────────────────── */
 
 interface SocketContextValue {
+  /** Raw socket instance for custom events */
+  socket: Socket | null;
   /** Whether the socket is currently connected */
   isConnected: boolean;
   /** All notifications received this session (newest first) */
@@ -34,6 +36,7 @@ interface SocketContextValue {
 ───────────────────────────────────────────────────────────────────────── */
 
 const SocketContext = createContext<SocketContextValue>({
+  socket: null,
   isConnected: false,
   notifications: [],
   unreadCount: 0,
@@ -116,7 +119,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <SocketContext.Provider
-      value={{ isConnected, notifications, unreadCount, markAllRead, dismiss }}
+      value={{ socket: socketRef.current, isConnected, notifications, unreadCount, markAllRead, dismiss }}
     >
       {children}
     </SocketContext.Provider>

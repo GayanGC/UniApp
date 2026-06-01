@@ -48,13 +48,20 @@ export interface LoginRequest {
   password: string;
 }
 
-/**
- * API Error Response
- */
 export interface ApiError {
   statusCode: number;
   message: string | string[];
   error: string;
+}
+
+/**
+ * Generic Paginated Response Interface
+ */
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  lastPage: number;
 }
 
 /**
@@ -174,10 +181,13 @@ export interface BoardingPost {
   monthlyRent: number;
   isAvailable: boolean;
   locationDetails: string | null;
+  latitude: number | null;
+  longitude: number | null;
   createdAt: string;
   updatedAt: string;
-  /** Populated when fetching the public listing (relations: ['provider']) */
+  /** Populated when fetching the public listing (relations: ['provider', 'reviews']) */
   provider?: BoardingPostProvider;
+  reviews?: BoardingReview[];
   /** Server-relative image paths e.g. ["/uploads/boarding/abc.jpg"] */
   images: string[];
 }
@@ -191,6 +201,8 @@ export interface BoardingFilters {
   minPrice: string;       // string so empty input ("") is valid — converted to number before API call
   maxPrice: string;
   available: boolean | null; // null = "show all", true/false = explicit filter
+  page: number;
+  limit: number;
 }
 
 /**
@@ -253,5 +265,62 @@ export interface NotificationItem {
   createdAt: string;
   /** Client-side only — true after markAllRead() is called */
   read: boolean;
+}
+
+/**
+ * Chat Message Interface
+ */
+export interface ChatMessage {
+  id: string;
+  senderId: number;
+  receiverId: number;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  sender?: User;
+  receiver?: User;
+}
+
+/**
+ * Conversation Interface (Inbox item)
+ */
+export interface Conversation {
+  user: {
+    userId: number;
+    fullName: string;
+    email: string;
+    role: UserRole;
+  };
+  latestMessage: ChatMessage;
+  unreadCount: number;
+}
+
+/**
+ * Boarding Review Interface
+ */
+export interface BoardingReview {
+  id: string;
+  postId: number;
+  studentUserId: number;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  student?: {
+    userId: number;
+    fullName: string;
+  };
+}
+
+/**
+ * Provider Analytics Interface
+ */
+export interface ProviderAnalytics {
+  totalPosts: number;
+  totalReviewsCount: number;
+  averageRating: number;
+  ratingDistribution: Array<{
+    rating: number;
+    count: number;
+  }>;
 }
 

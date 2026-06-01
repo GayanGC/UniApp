@@ -5,9 +5,11 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { User } from '@modules/users/entities';
+import { BoardingReview } from './boarding-review.entity';
 
 /**
  * BoardingPost Entity
@@ -43,6 +45,12 @@ export class BoardingPost {
   @Column({ name: 'location_details', type: 'varchar', length: 500, nullable: true })
   locationDetails: string;
 
+  @Column({ type: 'decimal', precision: 10, scale: 6, nullable: true })
+  latitude: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 6, nullable: true })
+  longitude: number;
+
   /**
    * Stored image file paths relative to the server root.
    * e.g. ["/uploads/boarding/abc.jpg", "/uploads/boarding/xyz.jpg"]
@@ -61,4 +69,7 @@ export class BoardingPost {
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'provider_user_id' })
   provider: User;
+
+  @OneToMany(() => BoardingReview, (review) => review.post)
+  reviews: BoardingReview[];
 }

@@ -13,6 +13,11 @@ import type {
   BoardingFilters,
   StudentProfile,
   UpdateStudentProfileRequest,
+  PaginatedResponse,
+  ChatMessage,
+  Conversation,
+  BoardingReview,
+  ProviderAnalytics,
 } from '@/types';
 
 /**
@@ -127,7 +132,7 @@ class ApiService {
    *
    * Only appends a param when it has a meaningful value so the URL stays clean.
    */
-  async getBoardingPosts(filters?: Partial<BoardingFilters>): Promise<BoardingPost[]> {
+  async getBoardingPosts(filters?: Partial<BoardingFilters>): Promise<PaginatedResponse<BoardingPost>> {
     const params = new URLSearchParams();
 
     if (filters?.location?.trim()) {
@@ -139,15 +144,20 @@ class ApiService {
     if (filters?.maxPrice && filters.maxPrice !== '') {
       params.append('maxPrice', filters.maxPrice);
     }
-    // Only send the 'available' param when explicitly set (not null)
     if (filters?.available !== null && filters?.available !== undefined) {
       params.append('available', String(filters.available));
+    }
+    if (filters?.page) {
+      params.append('page', String(filters.page));
+    }
+    if (filters?.limit) {
+      params.append('limit', String(filters.limit));
     }
 
     const queryString = params.toString();
     const url = queryString ? `/boarding?${queryString}` : '/boarding';
 
-    const response = await this.api.get<BoardingPost[]>(url);
+    const response = await this.api.get<PaginatedResponse<BoardingPost>>(url);
     return response.data;
   }
 
@@ -157,6 +167,30 @@ class ApiService {
    */
   async getBoardingPostById(postId: number): Promise<BoardingPost> {
     const response = await this.api.get<BoardingPost>(`/boarding/${postId}`);
+    return response.data;
+  }
+
+  /**
+   * Get all reviews for a specific boarding post.
+   */
+  async getBoardingReviews(postId: number): Promise<BoardingReview[]> {
+    const response = await this.api.get<BoardingReview[]>(`/boarding/${postId}/reviews`);
+    return response.data;
+  }
+
+  /**
+   * Submit a review for a specific boarding post.
+   */
+  async createBoardingReview(postId: number, data: { rating: number; comment: string }): Promise<BoardingReview> {
+    const response = await this.api.post<BoardingReview>(`/boarding/${postId}/reviews`, data);
+    return response.data;
+  }
+
+  /**
+   * Get provider analytics dashboard metrics.
+   */
+  async getProviderAnalytics(): Promise<ProviderAnalytics> {
+    const response = await this.api.get<ProviderAnalytics>('/boarding/provider/analytics');
     return response.data;
   }
 
@@ -197,6 +231,22 @@ class ApiService {
    */
   async updateStudentProfile(data: UpdateStudentProfileRequest): Promise<StudentProfile> {
     const response = await this.api.patch<StudentProfile>('/students/profile', data);
+    return response.data;
+  }
+
+  /**
+   * Get the list of chat conversations (Inbox)
+   */
+  async getConversations(): Promise<Conversation[]> {
+    const response = await this.api.get<Conversation[]>('/chat/conversations');
+    return response.data;
+  }
+
+  /**
+   * Get chat history with a specific user
+   */
+  async getChatHistory(userId: number): Promise<ChatMessage[]> {
+    const response = await this.api.get<ChatMessage[]>(`/chat/history/${userId}`);
     return response.data;
   }
 

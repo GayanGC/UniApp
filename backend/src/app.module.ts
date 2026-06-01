@@ -10,6 +10,7 @@ import { BoardingModule } from '@modules/boarding/boarding.module';
 import { PastPapersModule } from '@modules/past-papers/past-papers.module';
 import { CampusGuideModule } from '@modules/campus-guide/campus-guide.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
+import { ChatModule } from '@modules/chat/chat.module';
 import { JwtAuthGuard } from '@modules/auth/guards';
 
 /**
@@ -56,6 +57,7 @@ import { JwtAuthGuard } from '@modules/auth/guards';
     PastPapersModule,
     CampusGuideModule,
     NotificationsModule,
+    ChatModule,
   ],
   providers: [
     // Apply JWT guard globally

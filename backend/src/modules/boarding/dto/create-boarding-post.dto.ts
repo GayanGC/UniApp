@@ -37,6 +37,14 @@ export class CreateBoardingPostDto {
   @MaxLength(500, { message: 'Location details must not exceed 500 characters' })
   locationDetails?: string;
 
+  @IsNumber()
+  @IsOptional()
+  latitude?: number;
+
+  @IsNumber()
+  @IsOptional()
+  longitude?: number;
+
   /**
    * Pre-existing image paths — typically populated by the service after Multer
    * saves the uploaded files.  Clients don't send this; the controller sets it.

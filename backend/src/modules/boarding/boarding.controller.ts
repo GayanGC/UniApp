@@ -24,6 +24,7 @@ import { CreateBoardingPostDto, UpdateBoardingPostDto, GetBoardingFilterDto } fr
 import { JwtAuthGuard, RolesGuard } from '@modules/auth/guards';
 import { Roles, CurrentUser } from '@common/decorators';
 import { UserRole } from '@common/enums';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 
 /**
  * Multer disk-storage config shared by both Create and Update endpoints.
@@ -61,6 +62,8 @@ const imageFileFilter = (
  * Boarding Controller
  * Handles boarding post management endpoints
  */
+@ApiTags('Boarding')
+@ApiBearerAuth()
 @Controller('boarding')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class BoardingController {
@@ -79,6 +82,9 @@ export class BoardingController {
   @Post()
   @Roles(UserRole.BOARDING_PROVIDER)
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create a new boarding post (with optional image uploads)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiResponse({ status: 201, description: 'Boarding post created.' })
   @UseInterceptors(
     FilesInterceptor('images', 6, {
       storage: boardingImageStorage,
@@ -107,8 +113,23 @@ export class BoardingController {
    */
   @Get('my-posts')
   @Roles(UserRole.BOARDING_PROVIDER)
+  @ApiOperation({ summary: 'Get all posts created by the authenticated provider' })
+  @ApiResponse({ status: 200, description: 'List of posts.' })
   async getMyPosts(@CurrentUser('userId') userId: number) {
     return await this.boardingService.findMyPosts(userId);
+  }
+
+  /**
+   * Get analytics for the authenticated provider.
+   * GET /api/v1/boarding/provider/analytics
+   * Only accessible by boarding providers.
+   */
+  @Get('provider/analytics')
+  @Roles(UserRole.BOARDING_PROVIDER)
+  @ApiOperation({ summary: 'Get analytics dashboard metrics for the provider' })
+  @ApiResponse({ status: 200, description: 'Analytics data returned.' })
+  async getProviderAnalytics(@CurrentUser('userId') userId: number) {
+    return await this.boardingService.getProviderAnalytics(userId);
   }
 
   /**
@@ -121,6 +142,8 @@ export class BoardingController {
    * Accessible by all authenticated users.
    */
   @Get()
+  @ApiOperation({ summary: 'Get all boarding posts with optional search & filtering' })
+  @ApiResponse({ status: 200, description: 'Paginated list of boarding posts.' })
   async findAll(
     @Query(
       new ValidationPipe({
@@ -140,6 +163,9 @@ export class BoardingController {
    * Accessible by all authenticated users.
    */
   @Get(':id')
+  @ApiOperation({ summary: 'Get a single boarding post by ID' })
+  @ApiResponse({ status: 200, description: 'The boarding post.' })
+  @ApiResponse({ status: 404, description: 'Boarding post not found.' })
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return await this.boardingService.findOne(id);
   }
@@ -156,6 +182,9 @@ export class BoardingController {
    */
   @Patch(':id')
   @Roles(UserRole.BOARDING_PROVIDER)
+  @ApiOperation({ summary: 'Update a boarding post (with optional image uploads)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiResponse({ status: 200, description: 'Boarding post updated.' })
   @UseInterceptors(
     FilesInterceptor('images', 6, {
       storage: boardingImageStorage,
@@ -185,6 +214,8 @@ export class BoardingController {
   @Delete(':id')
   @Roles(UserRole.BOARDING_PROVIDER)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete a boarding post' })
+  @ApiResponse({ status: 204, description: 'Boarding post deleted.' })
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser('userId') userId: number,
