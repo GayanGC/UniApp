@@ -64,19 +64,35 @@ async function bootstrap() {
 
   // Start server
   const port = configService.get<number>('PORT', 3000);
-  await app.listen(port);
 
-  console.log(`
-    ╔═══════════════════════════════════════════════════════════╗
-    ║                                                           ║
-    ║   🎓 Uni App Backend API                                  ║
-    ║                                                           ║
-    ║   🚀 Server running on: http://localhost:${port}            ║
-    ║   📚 API Prefix: /${apiPrefix}                             ║
-    ║   🌍 Environment: ${configService.get<string>('NODE_ENV', 'development')}                           ║
-    ║                                                           ║
-    ╚═══════════════════════════════════════════════════════════╝
-  `);
+  if (!process.env.VERCEL) {
+    await app.listen(port);
+    console.log(`
+      ╔═══════════════════════════════════════════════════════════╗
+      ║                                                           ║
+      ║   🎓 Uni App Backend API                                  ║
+      ║                                                           ║
+      ║   🚀 Server running on: http://localhost:${port}            ║
+      ║   📚 API Prefix: /${apiPrefix}                             ║
+      ║   🌍 Environment: ${configService.get<string>('NODE_ENV', 'development')}                           ║
+      ║                                                           ║
+      ╚═══════════════════════════════════════════════════════════╝
+    `);
+  }
+
+  await app.init();
+  return app.getHttpAdapter().getInstance();
 }
 
-bootstrap();
+let cachedServer: any;
+
+if (process.env.VERCEL) {
+  module.exports = async (req: any, res: any) => {
+    if (!cachedServer) {
+      cachedServer = await bootstrap();
+    }
+    return cachedServer(req, res);
+  };
+} else {
+  bootstrap();
+}
