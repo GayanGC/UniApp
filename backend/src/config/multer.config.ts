@@ -9,7 +9,7 @@ import { BadRequestException } from '@nestjs/common';
  */
 
 // Upload directory
-const uploadDir = './uploads/past-papers';
+const uploadDir = process.env.UPLOAD_DIR || '/tmp/uploads/past-papers';
 
 // Ensure upload directory exists
 if (!existsSync(uploadDir)) {

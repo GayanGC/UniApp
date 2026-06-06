@@ -34,7 +34,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes } from '
  * URL: /uploads/boarding/<uuid><ext>
  */
 const boardingImageStorage = diskStorage({
-  destination: './uploads/boarding',
+  destination: process.env.UPLOAD_DIR || '/tmp/uploads/boarding',
   filename: (_req, file, cb) => {
     const uniqueName = `${uuidv4()}${extname(file.originalname)}`;
     cb(null, uniqueName);

@@ -20,7 +20,7 @@ import { CurrentUser } from '@common/decorators';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 
 const resourceStorage = diskStorage({
-  destination: './uploads/resources',
+  destination: process.env.UPLOAD_DIR || '/tmp/uploads/resources',
   filename: (_req, file, cb) => {
     const uniqueName = `${uuidv4()}${extname(file.originalname)}`;
     cb(null, uniqueName);

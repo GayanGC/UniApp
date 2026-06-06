@@ -33,7 +33,7 @@ export class NotesController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
-        destination: './uploads/notes',
+        destination: process.env.UPLOAD_DIR || '/tmp/uploads/notes',
         filename: (req, file, cb) => {
           const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
           cb(null, `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`);
