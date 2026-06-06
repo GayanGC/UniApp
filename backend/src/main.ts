@@ -1,3 +1,6 @@
+import * as tsConfigPaths from 'tsconfig-paths';
+tsConfigPaths.register({ baseUrl: './', paths: { '@/*': ['src/*'], '@modules/*': ['src/modules/*'], '@config/*': ['src/config/*'], '@common/*': ['src/common/*'] } });
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
