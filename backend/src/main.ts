@@ -1,18 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import express from 'express';
-import { ExpressAdapter } from '@nestjs/platform-express';
 
-const server = express();
-
-async function createServer() {
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
   app.enableCors();
   app.useGlobalPipes(new ValidationPipe());
-  await app.init();
+  await app.listen(process.env.PORT || 3000);
 }
-
-createServer();
-
-export default server;
+bootstrap();
