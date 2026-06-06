@@ -52,6 +52,13 @@ import { JwtAuthGuard } from '@modules/auth/guards';
                 rejectUnauthorized: false,
               }
             : false,
+        keepConnectionAlive: true,
+        retryAttempts: 1, // Do not block bootstrap with infinite retries
+        retryDelay: 3000,
+        extra: {
+          max: 10, // Secure connection pool limit for serverless lambdas
+          connectionTimeoutMillis: 5000,
+        },
       }),
     }),
 

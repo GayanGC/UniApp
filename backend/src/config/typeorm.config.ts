@@ -40,6 +40,13 @@ export const typeOrmConfig: DataSourceOptions = {
           rejectUnauthorized: false,
         }
       : false,
+  keepConnectionAlive: true,
+  retryAttempts: 1,
+  retryDelay: 3000,
+  extra: {
+    max: 10,
+    connectionTimeoutMillis: 5000,
+  },
 };
 
 // DataSource for migrations
