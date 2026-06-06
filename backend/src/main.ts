@@ -11,6 +11,16 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
   });
   app.useGlobalPipes(new ValidationPipe());
+
+  // Intercept OPTIONS preflight requests immediately before TypeORM or guards block them
+  app.use((req: any, res: any, next: any) => {
+    if (req.method === 'OPTIONS') {
+      res.status(200).end();
+      return;
+    }
+    next();
+  });
+
   await app.listen(process.env.PORT || 3000);
 }
 bootstrap();
