@@ -1,13 +1,17 @@
 import { NestFactory } from '@nestjs/core';
+import { ExpressAdapter } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import cors from 'cors';
+import express from 'express';
+
+// Create the Express instance — exported as the Vercel serverless handler
+const server = express();
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
 
-  // Inject native cors as top-level middleware before NestJS processes any routes
-  // This ensures OPTIONS preflight requests are resolved immediately
+  // Native cors middleware — runs before any NestJS guard or pipe
   app.use(
     cors({
       origin: ['https://uniapp-prod-frontend.vercel.app', 'http://localhost:3000'],
@@ -21,7 +25,7 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe());
 
-  // Global Express error logging middleware — surfaces crash traces in Vercel logs
+  // Global error logging middleware — surfaces crash traces in Vercel Function logs
   app.use((err: any, req: any, res: any, next: any) => {
     console.error('[CRITICAL RUNTIME ERROR]', {
       method: req.method,
@@ -36,6 +40,11 @@ async function bootstrap() {
     });
   });
 
-  await app.listen(process.env.PORT || 3000);
+  // Use init() instead of listen() — Vercel handles the port binding
+  await app.init();
 }
+
 bootstrap();
+
+// Export the Express instance as the default handler for Vercel serverless
+export default server;
