@@ -52,6 +52,7 @@ import { JwtAuthGuard } from '@modules/auth/guards';
                 rejectUnauthorized: false,
               }
             : false,
+        // @ts-ignore
         keepConnectionAlive: true,
         retryAttempts: 1, // Do not block bootstrap with infinite retries
         retryDelay: 3000,
