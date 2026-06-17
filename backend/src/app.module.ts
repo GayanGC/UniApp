@@ -36,31 +36,36 @@ import { JwtAuthGuard } from '@modules/auth/guards';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('database.host'),
-        port: configService.get<number>('database.port'),
-        username: configService.get<string>('database.username'),
-        password: configService.get<string>('database.password'),
-        database: configService.get<string>('database.database'),
-        entities: typeOrmConfig.entities,
-        synchronize: configService.get<boolean>('database.synchronize'),
-        logging: configService.get<boolean>('database.logging'),
-        ssl:
-          configService.get<string>('NODE_ENV') === 'production'
-            ? {
-                rejectUnauthorized: false,
-              }
-            : false,
-        // @ts-ignore
-        keepConnectionAlive: true,
-        retryAttempts: 1, // Do not block bootstrap with infinite retries
-        retryDelay: 3000,
-        extra: {
+      useFactory: (configService: ConfigService) => {
+        // Build config as `any` to safely pass serverless-only options
+        // that are valid at NestJS runtime but rejected by strict TypeORM typings
+        const typeOrmOptions: any = {
+          type: 'postgres',
+          host: configService.get<string>('database.host'),
+          port: configService.get<number>('database.port'),
+          username: configService.get<string>('database.username'),
+          password: configService.get<string>('database.password'),
+          database: configService.get<string>('database.database'),
+          entities: typeOrmConfig.entities,
+          synchronize: configService.get<boolean>('database.synchronize'),
+          logging: configService.get<boolean>('database.logging'),
+          ssl:
+            configService.get<string>('NODE_ENV') === 'production'
+              ? { rejectUnauthorized: false }
+              : false,
+        };
+
+        // Dynamically assign serverless optimizations to bypass strict TS checks
+        typeOrmOptions['keepConnectionAlive'] = true;
+        typeOrmOptions['retryAttempts'] = 1; // Prevent infinite retries blocking bootstrap
+        typeOrmOptions['retryDelay'] = 3000;
+        typeOrmOptions['extra'] = {
           max: 10, // Secure connection pool limit for serverless lambdas
           connectionTimeoutMillis: 5000,
-        },
-      }),
+        };
+
+        return typeOrmOptions;
+      },
     }),
 
     // Feature Modules
